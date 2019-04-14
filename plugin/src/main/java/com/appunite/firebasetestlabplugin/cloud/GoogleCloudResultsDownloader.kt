@@ -8,30 +8,24 @@ import org.gradle.api.logging.Logger
 import java.io.File
 
 
-internal class CloudTestResultDownloader(
-        private val sdk: FirebaseTestLabPlugin.Sdk,
+internal class GoogleCloudResultsDownloader(
+        private val googleCloudSdk: FirebaseTestLabPlugin.GoogleCloudSdk,
         private val resultsTypes: ResultTypes,
-        private val gCloudDirectory: File,
-        private val resultsPath: File,
-        private val gCloudBucketName: String,
+        private val googleCloudDir: File,
+        private val resultsDir: File,
+        private val googleCloudBucketName: String,
         private val logger: Logger) {
 
     fun getResults() {
-        if (!resultsTypes.junit && !resultsTypes.logcat && !resultsTypes.video && !resultsTypes.xml) {
-            return
-        }
-        val gCloudFullPath = "$gCloudBucketName/$gCloudDirectory"
-        logger.lifecycle("DOWNLOAD: Downloading results from $gCloudFullPath")
-
+        if (!resultsTypes.junit && !resultsTypes.logcat && !resultsTypes.video && !resultsTypes.xml) return
+        
         prepareDownloadDirectory()
         downloadTestResults()
     }
 
     private fun prepareDownloadDirectory() {
-        resultsPath.mkdirs()
-        if (!resultsPath.exists()) {
-            throw GradleException("Issue when creating destination dir $gCloudDirectory")
-        }
+        resultsDir.mkdirs()
+        if (!resultsDir.exists()) throw GradleException("Cannot create results dir at: $googleCloudDir")
     }
 
     private fun downloadTestResults() {
@@ -49,7 +43,7 @@ internal class CloudTestResultDownloader(
             excludeQuery.append("|.*\\.mp4$")
         }
         excludeQuery.append("|.*\\.txt$\"").toString()
-        val processCreator = ProcessBuilder("""${sdk.gsutil.absolutePath} -m rsync $excludeQuery -r gs://$gCloudBucketName/$gCloudDirectory $resultsPath""".asCommand())
+        val processCreator = ProcessBuilder("""${googleCloudSdk.gsutil.absolutePath} -m rsync $excludeQuery -r gs://$googleCloudBucketName/$googleCloudDir $resultsDir""".asCommand())
         val process = processCreator.start()
 
         process.errorStream.bufferedReader().forEachLine { logger.lifecycle(it) }
@@ -59,7 +53,7 @@ internal class CloudTestResultDownloader(
     }
 
     fun clearResultsDir() {
-        val processCreator = ProcessBuilder("""${sdk.gsutil.absolutePath} rm gs://$gCloudBucketName/$gCloudDirectory/**""".asCommand())
+        val processCreator = ProcessBuilder("""${googleCloudSdk.gsutil.absolutePath} rm gs://$googleCloudBucketName/$googleCloudDir/**""".asCommand())
         val process = processCreator.start()
 
         process.errorStream.bufferedReader().forEachLine { logger.lifecycle(it) }

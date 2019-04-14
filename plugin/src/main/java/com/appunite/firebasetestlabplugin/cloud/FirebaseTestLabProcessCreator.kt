@@ -13,7 +13,7 @@ sealed class TestType : Serializable {
 }
 
 data class ProcessData(
-    val sdk: FirebaseTestLabPlugin.Sdk,
+    val sdk: FirebaseTestLabPlugin.GoogleCloudSdk,
     val gCloudBucketName: String?,
     val gCloudDirectory: String?,
     val device: Device,
